@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 import httpx
@@ -20,7 +20,9 @@ from knowitall.services import (
     opportunity_radar,
     signal_filter,
 )
+from knowitall.services.email_service import send_digest_email
 from knowitall.services.opportunity_scout import generate_scout_report
+from knowitall.services import scheduler as scheduler_service
 
 router = APIRouter()
 
@@ -129,4 +131,50 @@ async def scout_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         "scout_report.html",
         {"request": request, "report": report},
+    )
+
+
+# ---------- Manual scan & email endpoints ----------
+
+
+@router.post("/api/scan-now")
+async def scan_now() -> JSONResponse:
+    """Trigger an immediate scan and store results.
+
+    This does NOT send an email — use /api/send-email for that.
+    """
+    cfg = get_config()
+    digest, scout = await scheduler_service._run_scan(cfg)
+    scheduler_service.latest_digest = digest
+    scheduler_service.latest_scout = scout
+    return JSONResponse(
+        {
+            "status": "ok",
+            "digest_signals": digest.total_signals(),
+            "scout_signals": scout.total_signals(),
+        }
+    )
+
+
+@router.post("/api/send-email")
+async def send_email_now() -> JSONResponse:
+    """Send the latest scan results via email on demand.
+
+    This is independent of the daily scheduled email.
+    """
+    digest = scheduler_service.latest_digest
+    scout = scheduler_service.latest_scout
+    if digest is None:
+        return JSONResponse(
+            {"status": "error", "detail": "No scan results available. Run a scan first."},
+            status_code=400,
+        )
+
+    cfg = get_config()
+    success = send_digest_email(digest, cfg.email, scout_report=scout)
+    if success:
+        return JSONResponse({"status": "ok", "detail": "Email sent successfully."})
+    return JSONResponse(
+        {"status": "error", "detail": "Failed to send email. Check SMTP configuration."},
+        status_code=500,
     )
