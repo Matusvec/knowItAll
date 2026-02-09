@@ -18,7 +18,17 @@ knowItAll monitors the AI/CS research landscape and translates it into actionabl
 
 6. **Zero-Noise Philosophy** — If it doesn't create leverage, reveal a timing asymmetry, or unlock a new product class, it doesn't get sent.
 
-7. **Startup Opportunity Scout** — Daily web scanning across Reddit, Hacker News, Product Hunt, and other sources. Identifies tech trends, user complaints/pain points, and industry gaps. Cross-references signals to generate actionable startup ideas with target market, tech stack, and monetization strategy. Structured reports cover: top tech trends, key complaints & demands, industry gaps, and startup ideas — all sourced and quantified.
+7. **Startup Opportunity Scout** — Daily web scanning across 19 sources for startup-relevant signals. Identifies tech trends, user complaints/pain points, and industry gaps. Cross-references signals to generate actionable startup ideas with target market, tech stack, and monetization strategy. Structured reports cover: top tech trends, key complaints & demands, industry gaps, and startup ideas — all sourced and quantified.
+
+   **Sources scanned daily:**
+   - **Forums & Communities:** Reddit (r/Entrepreneur, r/startups, r/smallbusiness, r/SaaS, r/artificial), Hacker News
+   - **Social Media:** Twitter/X (requires `TWITTER_BEARER_TOKEN`), LinkedIn (requires `LINKEDIN_ACCESS_TOKEN`)
+   - **Complaint Aggregators:** Trustpilot, ConsumerAffairs, BBB
+   - **Trend Tools:** Google Trends, Exploding Topics
+   - **Market Research:** Statista, CB Insights, Crunchbase
+   - **Startup Idea Lists:** Y Combinator RFS, Product Hunt
+   - **App/Review Sites:** App Store reviews, Google Play reviews, Amazon reviews
+   - **News & Blogs:** TechCrunch, Forbes
 
 ## Quick Start
 
@@ -36,6 +46,33 @@ pytest tests/ -v
 Open [http://localhost:8000](http://localhost:8000) to view today's interactive digest.
 Open [http://localhost:8000/scout](http://localhost:8000/scout) to view the startup opportunity scout report.
 
+## Email Setup
+
+To enable daily email delivery of intelligence reports, set the following environment variables before starting the server:
+
+```bash
+export SMTP_USER=your-email@gmail.com
+export SMTP_PASSWORD=your-app-password
+```
+
+**For Gmail users:** Enable 2-Step Verification on your Google account, then generate an App Password at <https://myaccount.google.com/apppasswords>. Use that App Password as `SMTP_PASSWORD`.
+
+Optional email configuration:
+
+```bash
+export SMTP_HOST=smtp.gmail.com        # default: smtp.gmail.com
+export SMTP_PORT=587                    # default: 587
+export EMAIL_RECIPIENT=you@example.com  # default: matusvec@gmail.com
+export SMTP_SENDER=you@example.com      # default: SMTP_USER value
+```
+
+Optional API tokens for social media scanning:
+
+```bash
+export TWITTER_BEARER_TOKEN=your-twitter-bearer-token
+export LINKEDIN_ACCESS_TOKEN=your-linkedin-access-token
+```
+
 ## API Endpoints
 
 | Endpoint | Description |
@@ -45,6 +82,8 @@ Open [http://localhost:8000/scout](http://localhost:8000/scout) to view the star
 | `GET /api/digest` | JSON digest data |
 | `GET /api/scout-report` | JSON scout report data |
 | `GET /api/health` | Health check |
+| `POST /api/scan-now` | Trigger immediate scan |
+| `POST /api/send-email` | Send latest scan results via email |
 
 ## Project Structure
 
