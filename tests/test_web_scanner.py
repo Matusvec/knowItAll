@@ -9,6 +9,7 @@ import respx
 from knowitall.models.scout_report import ComplaintSource, TrendSource
 from knowitall.services.web_scanner import (
     scan_hacker_news,
+    scan_product_hunt,
     scan_reddit,
 )
 
@@ -77,7 +78,7 @@ class TestScanReddit:
     @respx.mock
     @pytest.mark.asyncio
     async def test_extracts_complaints(self, mock_reddit_response):
-        respx.get("https://www.reddit.com/r/testSub/hot.json").mock(
+        respx.get("https://old.reddit.com/r/testSub/hot.json").mock(
             return_value=httpx.Response(200, json=mock_reddit_response)
         )
         async with httpx.AsyncClient() as client:
@@ -89,7 +90,7 @@ class TestScanReddit:
     @respx.mock
     @pytest.mark.asyncio
     async def test_handles_http_error(self):
-        respx.get("https://www.reddit.com/r/failSub/hot.json").mock(
+        respx.get("https://old.reddit.com/r/failSub/hot.json").mock(
             return_value=httpx.Response(500)
         )
         async with httpx.AsyncClient() as client:
@@ -105,7 +106,7 @@ class TestScanReddit:
                 "children": [mock_reddit_response["data"]["children"][1]]
             }
         }
-        respx.get("https://www.reddit.com/r/testSub/hot.json").mock(
+        respx.get("https://old.reddit.com/r/testSub/hot.json").mock(
             return_value=httpx.Response(200, json=data)
         )
         async with httpx.AsyncClient() as client:
@@ -147,3 +148,41 @@ class TestScanHackerNews:
             trends, complaints = await scan_hacker_news(client)
         assert trends == []
         assert complaints == []
+
+
+class TestScanProductHunt:
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_extracts_trends_from_rss(self):
+        rss_xml = """<?xml version="1.0" encoding="UTF-8"?>
+        <rss version="2.0">
+          <channel>
+            <item>
+              <title>Cool AI Tool</title>
+              <link>https://www.producthunt.com/posts/cool-ai-tool</link>
+            </item>
+            <item>
+              <title>New SaaS Platform</title>
+              <link>https://www.producthunt.com/posts/new-saas-platform</link>
+            </item>
+          </channel>
+        </rss>"""
+        respx.get("https://www.producthunt.com/feed").mock(
+            return_value=httpx.Response(200, text=rss_xml)
+        )
+        async with httpx.AsyncClient() as client:
+            trends = await scan_product_hunt(client)
+        assert len(trends) == 2
+        assert trends[0].title == "Cool AI Tool"
+        assert trends[1].title == "New SaaS Platform"
+        assert all(TrendSource.PRODUCT_HUNT in t.sources for t in trends)
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_handles_http_error(self):
+        respx.get("https://www.producthunt.com/feed").mock(
+            return_value=httpx.Response(500)
+        )
+        async with httpx.AsyncClient() as client:
+            trends = await scan_product_hunt(client)
+        assert trends == []
