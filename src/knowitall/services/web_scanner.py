@@ -627,7 +627,7 @@ async def scan_twitter(
     try:
         resp = await client.get(
             "https://api.twitter.com/2/tweets/search/recent",
-            params={"query": query, "max_results": "25", "tweet.fields": "author_id,created_at,text"},
+            params={"query": query, "max_results": "25", "tweet_fields": "author_id,created_at,text"},
             headers={"Authorization": f"Bearer {bearer}", "User-Agent": "knowItAll/0.1"},
             timeout=15.0,
         )
@@ -684,8 +684,8 @@ async def scan_linkedin(
 
     try:
         resp = await client.get(
-            "https://api.linkedin.com/v2/posts",
-            params={"q": "search", "keywords": "frustrated software problem", "count": "25"},
+            "https://api.linkedin.com/v2/ugcPosts",
+            params={"q": "authors", "count": "25"},
             headers={"Authorization": f"Bearer {token}", "User-Agent": "knowItAll/0.1"},
             timeout=15.0,
         )
@@ -715,7 +715,7 @@ async def scan_linkedin(
                 summary=text[:200],
                 detail=text[:500],
                 source=ComplaintSource.LINKEDIN,
-                source_url=f"https://www.linkedin.com/feed/update/{post_id}" if post_id else "",
+                source_url=f"https://www.linkedin.com/feed/update/urn:li:share:{post_id}" if post_id else "",
                 quote=text[:200],
                 severity=round(severity, 2),
                 detected_at=datetime.now(timezone.utc),

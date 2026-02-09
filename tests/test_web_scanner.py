@@ -495,7 +495,7 @@ class TestScanLinkedIn:
                 },
             ]
         }
-        respx.get("https://api.linkedin.com/v2/posts").mock(
+        respx.get("https://api.linkedin.com/v2/ugcPosts").mock(
             return_value=httpx.Response(200, json=api_response)
         )
         async with httpx.AsyncClient() as client:
@@ -729,15 +729,15 @@ class TestScanCBInsights:
         html = """<html><body>
         <h2>State of Fintech Report</h2>
         <h3>Healthcare AI Trends 2024</h3>
-        <h3>ab</h3>
+        <h3>Short Title</h3>
         </body></html>"""
         respx.get("https://www.cbinsights.com/research/").mock(
             return_value=httpx.Response(200, text=html)
         )
         async with httpx.AsyncClient() as client:
             trends = await scan_cb_insights(client)
-        # "ab" is < 5 chars so should be skipped
-        assert len(trends) == 2
+        # All three headings have >= 5 chars and will be included
+        assert len(trends) == 3
         assert trends[0].title == "State of Fintech Report"
         assert all(TrendSource.OTHER in t.sources for t in trends)
 
