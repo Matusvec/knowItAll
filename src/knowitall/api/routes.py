@@ -12,6 +12,7 @@ import httpx
 
 from knowitall.config import get_config
 from knowitall.models.digest import ActionItem, DailyDigest
+from knowitall.models.scout_report import ScoutReport
 from knowitall.services import (
     research_monitor,
     startup_translator,
@@ -19,6 +20,7 @@ from knowitall.services import (
     opportunity_radar,
     signal_filter,
 )
+from knowitall.services.opportunity_scout import generate_scout_report
 
 router = APIRouter()
 
@@ -112,3 +114,19 @@ async def digest_page(request: Request) -> HTMLResponse:
 async def health() -> dict:
     """Health check endpoint."""
     return {"status": "ok", "service": "knowItAll", "version": "0.1.0"}
+
+
+@router.get("/api/scout-report", response_model=ScoutReport)
+async def get_scout_report() -> ScoutReport:
+    """Generate today's startup opportunity scout report (JSON)."""
+    return await generate_scout_report()
+
+
+@router.get("/scout", response_class=HTMLResponse)
+async def scout_page(request: Request) -> HTMLResponse:
+    """Render the startup opportunity scout report as an HTML page."""
+    report = await generate_scout_report()
+    return templates.TemplateResponse(
+        "scout_report.html",
+        {"request": request, "report": report},
+    )

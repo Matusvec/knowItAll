@@ -18,6 +18,8 @@ knowItAll monitors the AI/CS research landscape and translates it into actionabl
 
 6. **Zero-Noise Philosophy** — If it doesn't create leverage, reveal a timing asymmetry, or unlock a new product class, it doesn't get sent.
 
+7. **Startup Opportunity Scout** — Daily web scanning across Reddit, Hacker News, Product Hunt, and other sources. Identifies tech trends, user complaints/pain points, and industry gaps. Cross-references signals to generate actionable startup ideas with target market, tech stack, and monetization strategy. Structured reports cover: top tech trends, key complaints & demands, industry gaps, and startup ideas — all sourced and quantified.
+
 ## Quick Start
 
 ```bash
@@ -32,13 +34,16 @@ pytest tests/ -v
 ```
 
 Open [http://localhost:8000](http://localhost:8000) to view today's interactive digest.
+Open [http://localhost:8000/scout](http://localhost:8000/scout) to view the startup opportunity scout report.
 
 ## API Endpoints
 
 | Endpoint | Description |
 |---|---|
 | `GET /` | Interactive HTML digest |
+| `GET /scout` | Startup opportunity scout report (HTML) |
 | `GET /api/digest` | JSON digest data |
+| `GET /api/scout-report` | JSON scout report data |
 | `GET /api/health` | Health check |
 
 ## Project Structure
@@ -52,17 +57,21 @@ src/knowitall/
 │   ├── startup_idea.py      # Startup ideas from research
 │   ├── tool.py              # Tech tools + hype assessment
 │   ├── opportunity.py       # Founder opportunities
-│   └── digest.py            # Daily digest assembly
+│   ├── digest.py            # Daily digest assembly
+│   └── scout_report.py     # Scout report models
 ├── services/                # Core intelligence services
 │   ├── research_monitor.py  # arXiv/OpenReview monitoring
 │   ├── startup_translator.py# Research-to-startup pipeline
 │   ├── tool_tracker.py      # Tool/framework tracking
 │   ├── opportunity_radar.py # Opportunity detection
-│   └── signal_filter.py     # Zero-noise filtering
+│   ├── signal_filter.py     # Zero-noise filtering
+│   ├── web_scanner.py       # Multi-source web scanning
+│   └── opportunity_scout.py # Startup opportunity scout
 ├── api/
 │   └── routes.py            # API routes + digest generation
 └── templates/
-    └── digest.html          # Interactive digest UI
+    ├── digest.html          # Interactive digest UI
+    └── scout_report.html    # Scout report UI
 ```
 
 ## Tech Stack
