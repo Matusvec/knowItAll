@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 from pydantic import BaseModel, Field
 
 
@@ -59,12 +61,34 @@ class ScoutConfig(BaseModel):
     min_trend_interest: float = 0.5
 
 
+class EmailConfig(BaseModel):
+    """Configuration for email delivery."""
+
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    recipient: str = "matusvec@gmail.com"
+    sender: str = ""
+
+
+class SchedulerConfig(BaseModel):
+    """Configuration for the daily scan scheduler."""
+
+    scan_hour: int = 5
+    scan_minute: int = 30
+    email_hour: int = 6
+    email_minute: int = 0
+
+
 class AppConfig(BaseModel):
     """Top-level application configuration."""
 
     sources: SourcesConfig = Field(default_factory=SourcesConfig)
     filters: FilterConfig = Field(default_factory=FilterConfig)
     scout: ScoutConfig = Field(default_factory=ScoutConfig)
+    email: EmailConfig = Field(default_factory=EmailConfig)
+    scheduler: SchedulerConfig = Field(default_factory=SchedulerConfig)
     digest_max_papers: int = 10
     digest_max_tools: int = 5
     digest_max_opportunities: int = 5
@@ -77,4 +101,13 @@ class AppConfig(BaseModel):
 
 def get_config() -> AppConfig:
     """Return the application configuration."""
-    return AppConfig()
+    return AppConfig(
+        email=EmailConfig(
+            smtp_host=os.environ.get("SMTP_HOST", "smtp.gmail.com"),
+            smtp_port=int(os.environ.get("SMTP_PORT", "587")),
+            smtp_user=os.environ.get("SMTP_USER", ""),
+            smtp_password=os.environ.get("SMTP_PASSWORD", ""),
+            recipient=os.environ.get("EMAIL_RECIPIENT", "matusvec@gmail.com"),
+            sender=os.environ.get("SMTP_SENDER", os.environ.get("SMTP_USER", "")),
+        ),
+    )

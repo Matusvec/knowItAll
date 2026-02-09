@@ -120,6 +120,16 @@
         Daily startup opportunity scan · {{ report.total_signals() }} signals found today.
     </p>
 
+    <div style="margin-bottom:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap">
+        <button class="action-btn" id="btn-scan" onclick="scanNow()" style="font-size:0.95rem;padding:0.5rem 1.2rem;background:var(--surface);color:var(--accent);border:1px solid var(--accent);border-radius:4px;cursor:pointer">
+            🔄 Scan Now
+        </button>
+        <button class="action-btn" id="btn-email" onclick="sendEmail()" style="font-size:0.95rem;padding:0.5rem 1.2rem;background:var(--surface);color:var(--accent);border:1px solid var(--accent);border-radius:4px;cursor:pointer">
+            📧 Send to Email
+        </button>
+        <span id="action-status" style="color:var(--muted);font-size:0.85rem;align-self:center"></span>
+    </div>
+
     <div class="stats">
         <div class="stat-card">
             <div class="number">{{ report.tech_trends | length }}</div>
@@ -337,6 +347,58 @@ function toggleExpand(btn) {
         content.classList.add('open');
         btn.textContent = btn.textContent.replace('▶', '▼');
     }
+}
+function scanNow() {
+    var btn = document.getElementById('btn-scan');
+    var status = document.getElementById('action-status');
+    btn.disabled = true;
+    btn.textContent = '⏳ Scanning…';
+    status.textContent = '';
+    fetch('/api/scan-now', {method: 'POST'})
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            btn.disabled = false;
+            btn.textContent = '🔄 Scan Now';
+            if (data.status === 'ok') {
+                status.textContent = '✅ Scan complete — ' + data.digest_signals + ' digest signals, ' + data.scout_signals + ' scout signals';
+                status.style.color = 'var(--green)';
+            } else {
+                status.textContent = '❌ ' + (data.detail || 'Scan failed');
+                status.style.color = 'var(--red)';
+            }
+        })
+        .catch(function() {
+            btn.disabled = false;
+            btn.textContent = '🔄 Scan Now';
+            status.textContent = '❌ Network error';
+            status.style.color = 'var(--red)';
+        });
+}
+function sendEmail() {
+    var btn = document.getElementById('btn-email');
+    var status = document.getElementById('action-status');
+    btn.disabled = true;
+    btn.textContent = '⏳ Sending…';
+    status.textContent = '';
+    fetch('/api/send-email', {method: 'POST'})
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            btn.disabled = false;
+            btn.textContent = '📧 Send to Email';
+            if (data.status === 'ok') {
+                status.textContent = '✅ ' + data.detail;
+                status.style.color = 'var(--green)';
+            } else {
+                status.textContent = '❌ ' + (data.detail || 'Failed to send email');
+                status.style.color = 'var(--red)';
+            }
+        })
+        .catch(function() {
+            btn.disabled = false;
+            btn.textContent = '📧 Send to Email';
+            status.textContent = '❌ Network error';
+            status.style.color = 'var(--red)';
+        });
 }
 </script>
 </body>
