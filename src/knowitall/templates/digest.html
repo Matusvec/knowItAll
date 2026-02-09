@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ digest.headline }}</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --text: #e6edf3;
+            --muted: #8b949e;
+            --accent: #58a6ff;
+            --green: #3fb950;
+            --orange: #d29922;
+            --red: #f85149;
+            --purple: #bc8cff;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem 1rem;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+        }
+        .subtitle {
+            color: var(--muted);
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+        .stats {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            flex: 1;
+            min-width: 140px;
+        }
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .stat-card .label {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+        .section {
+            margin-bottom: 2rem;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 1rem 1.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px 8px 0 0;
+            user-select: none;
+        }
+        .section-header h2 {
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .section-header .badge {
+            background: var(--accent);
+            color: var(--bg);
+            border-radius: 12px;
+            padding: 0.1rem 0.6rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .section-header .toggle {
+            font-size: 1.2rem;
+            transition: transform 0.2s;
+        }
+        .section-content {
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+        }
+        .section-content.collapsed { display: none; }
+        .card {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .card:last-child { border-bottom: none; }
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .card-title a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .card-title a:hover { text-decoration: underline; }
+        .card-meta {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+        .card-body {
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+        .tag {
+            display: inline-block;
+            font-size: 0.75rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            margin-right: 0.3rem;
+        }
+        .tag-green { background: rgba(63,185,80,0.15); color: var(--green); }
+        .tag-orange { background: rgba(210,153,34,0.15); color: var(--orange); }
+        .tag-red { background: rgba(248,81,73,0.15); color: var(--red); }
+        .tag-purple { background: rgba(188,140,255,0.15); color: var(--purple); }
+        .tag-blue { background: rgba(88,166,255,0.15); color: var(--accent); }
+        .links {
+            margin-top: 0.5rem;
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .links a {
+            font-size: 0.8rem;
+            color: var(--accent);
+            text-decoration: none;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.2rem 0.6rem;
+        }
+        .links a:hover { background: rgba(88,166,255,0.1); }
+        .expandable {
+            margin-top: 0.5rem;
+        }
+        .expand-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 0.8rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .expand-btn:hover { color: var(--accent); border-color: var(--accent); }
+        .expand-content {
+            display: none;
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: rgba(22,27,34,0.8);
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+        .expand-content.open { display: block; }
+        .actions {
+            margin-top: 0.75rem;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .action-btn {
+            background: var(--surface);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            padding: 0.3rem 0.7rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .action-btn:hover {
+            background: rgba(88,166,255,0.15);
+        }
+        .founder-note {
+            margin-top: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            border-left: 3px solid var(--accent);
+            font-size: 0.85rem;
+            color: var(--muted);
+            font-style: italic;
+        }
+        .empty-state {
+            padding: 2rem;
+            text-align: center;
+            color: var(--muted);
+        }
+        .score-bar {
+            display: inline-block;
+            width: 60px;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            vertical-align: middle;
+            margin-left: 0.5rem;
+        }
+        .score-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+        @media (max-width: 600px) {
+            .stats { flex-direction: column; }
+            .stat-card { min-width: auto; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🧠 {{ digest.headline }}</h1>
+    <p class="subtitle">
+        Zero-noise intelligence for founders.
+        {{ digest.total_signals() }} signals passed the filter today.
+    </p>
+
+    <div class="stats">
+        <div class="stat-card">
+            <div class="number">{{ digest.papers | length }}</div>
+            <div class="label">Research Signals</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ digest.startup_ideas | length }}</div>
+            <div class="label">Startup Ideas</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ digest.tools | length }}</div>
+            <div class="label">Tech & Tools</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ digest.opportunities | length }}</div>
+            <div class="label">Opportunities</div>
+        </div>
+    </div>
+
+    <!-- Research Signals -->
+    {% if digest.papers %}
+    <div class="section" id="section-papers">
+        <div class="section-header" onclick="toggleSection('papers')">
+            <h2>📄 Research Signals <span class="badge">{{ digest.papers | length }}</span></h2>
+            <span class="toggle" id="toggle-papers">▼</span>
+        </div>
+        <div class="section-content" id="content-papers">
+            {% for paper in digest.papers %}
+            <div class="card">
+                <div class="card-title">
+                    <a href="{{ paper.project_url or paper.pdf_url }}" target="_blank" rel="noopener">{{ paper.title }}</a>
+                </div>
+                <div class="card-meta">
+                    {{ paper.authors[:3] | join(', ') }}{% if paper.authors | length > 3 %} et al.{% endif %}
+                    · {{ paper.source }}
+                    {% if paper.published %} · {{ paper.published.strftime('%Y-%m-%d') }}{% endif %}
+                    · <span class="tag tag-blue">{{ paper.founder_lens.value | replace('_', ' ') | title }}</span>
+                    <span class="score-bar"><span class="score-fill" style="width:{{ (paper.relevance_score * 100) | int }}%;background:var(--green)"></span></span>
+                </div>
+                <div class="card-body">{{ paper.summary }}</div>
+                <div class="founder-note">💡 {{ paper.founder_note }}</div>
+                <div class="links">
+                    {% if paper.pdf_url %}<a href="{{ paper.pdf_url }}" target="_blank" rel="noopener">📄 PDF</a>{% endif %}
+                    {% if paper.code_url %}<a href="{{ paper.code_url }}" target="_blank" rel="noopener">💻 Code</a>{% endif %}
+                    {% if paper.project_url %}<a href="{{ paper.project_url }}" target="_blank" rel="noopener">🔗 Project</a>{% endif %}
+                </div>
+                <div class="expandable">
+                    <button class="expand-btn" onclick="toggleExpand(this)">▶ What's new & why it matters</button>
+                    <div class="expand-content">
+                        <p><strong>Problem solved:</strong> {{ paper.problem_solved }}</p>
+                        <p><strong>Why it matters:</strong> {{ paper.why_it_matters }}</p>
+                        {% for cat in paper.categories %}
+                        <span class="tag tag-purple">{{ cat }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Startup Ideas -->
+    {% if digest.startup_ideas %}
+    <div class="section" id="section-ideas">
+        <div class="section-header" onclick="toggleSection('ideas')">
+            <h2>🚀 Startup Ideas <span class="badge">{{ digest.startup_ideas | length }}</span></h2>
+            <span class="toggle" id="toggle-ideas">▼</span>
+        </div>
+        <div class="section-content" id="content-ideas">
+            {% for idea in digest.startup_ideas %}
+            <div class="card">
+                <div class="card-title">{{ idea.title }}</div>
+                <div class="card-meta">
+                    <span class="tag tag-green">{{ idea.complexity.value }}</span>
+                    <span class="tag tag-orange">{{ idea.build_timeline }}</span>
+                    Target: {{ idea.target_user }}
+                </div>
+                <div class="card-body">
+                    <p><strong>Core insight:</strong> {{ idea.core_insight[:200] }}</p>
+                    <p><strong>Defensibility:</strong> {{ idea.defensibility }}</p>
+                </div>
+                {% if idea.not_worth_pursuing %}
+                <div class="founder-note" style="border-color:var(--red)">
+                    ⚠️ <strong>Not worth pursuing:</strong> {{ idea.not_worth_pursuing }} — {{ idea.why_not }}
+                </div>
+                {% endif %}
+                <div class="expandable">
+                    <button class="expand-btn" onclick="toggleExpand(this)">▶ MVP steps & tools</button>
+                    <div class="expand-content">
+                        <p><strong>Required tools:</strong> {{ idea.required_tools | join(', ') }}</p>
+                        <p><strong>MVP steps:</strong></p>
+                        <ol>
+                        {% for step in idea.mvp_steps %}
+                            <li>{{ step }}</li>
+                        {% endfor %}
+                        </ol>
+                        {% if idea.pitch_hook %}
+                        <p><strong>Pitch hook:</strong> {{ idea.pitch_hook }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="action-btn" onclick="showAction('mvp', '{{ idea.id }}')">📋 Generate MVP Plan</button>
+                    <button class="action-btn" onclick="showAction('competition', '{{ idea.id }}')">🔍 Assess Competition</button>
+                    <button class="action-btn" onclick="showAction('cost', '{{ idea.id }}')">💰 Estimate Costs</button>
+                    <button class="action-btn" onclick="showAction('pitch', '{{ idea.id }}')">🎤 Draft Pitch Outline</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tech & Tools -->
+    {% if digest.tools %}
+    <div class="section" id="section-tools">
+        <div class="section-header" onclick="toggleSection('tools')">
+            <h2>🛠 Tech & Tools <span class="badge">{{ digest.tools | length }}</span></h2>
+            <span class="toggle" id="toggle-tools">▼</span>
+        </div>
+        <div class="section-content" id="content-tools">
+            {% for tool in digest.tools %}
+            <div class="card">
+                <div class="card-title">
+                    <a href="{{ tool.url }}" target="_blank" rel="noopener">{{ tool.name }}</a>
+                </div>
+                <div class="card-meta">
+                    <span class="tag tag-blue">{{ tool.category }}</span>
+                    <span class="tag {% if tool.hype_level.value == 'game_changer' %}tag-green{% elif tool.hype_level.value == 'genuine_shift' %}tag-green{% elif tool.hype_level.value == 'pure_hype' %}tag-red{% else %}tag-orange{% endif %}">
+                        {{ tool.hype_level.value | replace('_', ' ') | title }}
+                    </span>
+                    <span class="score-bar"><span class="score-fill" style="width:{{ (tool.leverage_score * 100) | int }}%;background:var(--green)"></span></span>
+                </div>
+                <div class="card-body">
+                    <p>{{ tool.description }}</p>
+                    {% if tool.what_it_replaces %}<p><strong>Replaces:</strong> {{ tool.what_it_replaces }}</p>{% endif %}
+                    {% if tool.who_should_care %}<p><strong>Who cares:</strong> {{ tool.who_should_care }}</p>{% endif %}
+                </div>
+                <div class="founder-note">{{ tool.hype_rationale }}</div>
+                <div class="links">
+                    {% if tool.url %}<a href="{{ tool.url }}" target="_blank" rel="noopener">🔗 Link</a>{% endif %}
+                    {% if tool.docs_url %}<a href="{{ tool.docs_url }}" target="_blank" rel="noopener">📚 Docs</a>{% endif %}
+                    {% if tool.demo_url %}<a href="{{ tool.demo_url }}" target="_blank" rel="noopener">🎮 Demo</a>{% endif %}
+                </div>
+                {% if tool.use_cases %}
+                <div class="expandable">
+                    <button class="expand-btn" onclick="toggleExpand(this)">▶ Use cases</button>
+                    <div class="expand-content">
+                        <ul>
+                        {% for uc in tool.use_cases %}
+                            <li>{{ uc }}</li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Opportunity Radar -->
+    {% if digest.opportunities %}
+    <div class="section" id="section-opps">
+        <div class="section-header" onclick="toggleSection('opps')">
+            <h2>🎯 Opportunity Radar <span class="badge">{{ digest.opportunities | length }}</span></h2>
+            <span class="toggle" id="toggle-opps">▼</span>
+        </div>
+        <div class="section-content" id="content-opps">
+            {% for opp in digest.opportunities %}
+            <div class="card">
+                <div class="card-title">
+                    {% if opp.url %}<a href="{{ opp.url }}" target="_blank" rel="noopener">{{ opp.title }}</a>{% else %}{{ opp.title }}{% endif %}
+                </div>
+                <div class="card-meta">
+                    <span class="tag tag-purple">{{ opp.opportunity_type.value | replace('_', ' ') | title }}</span>
+                    ROI:
+                    <span class="score-bar"><span class="score-fill" style="width:{{ (opp.roi_score * 100) | int }}%;background:var(--green)"></span></span>
+                    {% if opp.deadline %} · Deadline: {{ opp.deadline.strftime('%Y-%m-%d') }}{% endif %}
+                </div>
+                <div class="card-body">{{ opp.description }}</div>
+                {% if opp.timing_note %}
+                <div class="founder-note">⏰ {{ opp.timing_note }}</div>
+                {% endif %}
+                {% if opp.action_steps %}
+                <div class="expandable">
+                    <button class="expand-btn" onclick="toggleExpand(this)">▶ Action steps</button>
+                    <div class="expand-content">
+                        <ol>
+                        {% for step in opp.action_steps %}
+                            <li>{{ step }}</li>
+                        {% endfor %}
+                        </ol>
+                        {% if opp.speed_to_validation %}
+                        <p><strong>Speed to validation:</strong> {{ opp.speed_to_validation }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not digest.papers and not digest.startup_ideas and not digest.tools and not digest.opportunities %}
+    <div class="empty-state">
+        <h2>📭 No signals today</h2>
+        <p>Everything was filtered out. Zero noise means sometimes zero signals — and that's fine.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleSection(id) {
+    const content = document.getElementById('content-' + id);
+    const toggle = document.getElementById('toggle-' + id);
+    if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        toggle.textContent = '▼';
+    } else {
+        content.classList.add('collapsed');
+        toggle.textContent = '▶';
+    }
+}
+
+function toggleExpand(btn) {
+    const content = btn.nextElementSibling;
+    if (content.classList.contains('open')) {
+        content.classList.remove('open');
+        btn.textContent = btn.textContent.replace('▼', '▶');
+    } else {
+        content.classList.add('open');
+        btn.textContent = btn.textContent.replace('▶', '▼');
+    }
+}
+
+function showAction(type, targetId) {
+    const labels = {
+        mvp: 'MVP Plan',
+        competition: 'Competition Assessment',
+        cost: 'Cost Estimate',
+        pitch: 'Pitch Outline'
+    };
+    alert('Action: ' + (labels[type] || type) + ' for ' + targetId +
+          '\n\nIn a production deployment, this would call the /api/action endpoint ' +
+          'to generate a detailed ' + (labels[type] || type).toLowerCase() + '.');
+}
+</script>
+</body>
+</html>
