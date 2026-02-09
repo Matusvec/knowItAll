@@ -249,9 +249,15 @@ def build_source_summary(
         "google_trends": "https://trends.google.com",
         "exploding_topics": "https://explodingtopics.com",
         "twitter": "https://twitter.com",
+        "linkedin": "https://www.linkedin.com",
         "trustpilot": "https://www.trustpilot.com",
         "consumer_affairs": "https://www.consumeraffairs.com",
+        "bbb": "https://www.bbb.org",
         "techcrunch": "https://techcrunch.com",
+        "app_store": "https://apps.apple.com",
+        "google_play": "https://play.google.com",
+        "amazon": "https://www.amazon.com",
+        "other": "",
     }
 
     all_sources = set(trend_sources.keys()) | set(complaint_sources.keys())

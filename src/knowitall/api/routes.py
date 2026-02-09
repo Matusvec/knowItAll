@@ -175,7 +175,15 @@ async def send_email_now() -> JSONResponse:
         return JSONResponse(
             {
                 "status": "error",
-                "detail": "SMTP credentials not configured. Set SMTP_USER and SMTP_PASSWORD environment variables.",
+                "detail": (
+                    "SMTP credentials not configured. "
+                    "Set the following environment variables before starting the server:\n"
+                    "  SMTP_USER=your-email@gmail.com\n"
+                    "  SMTP_PASSWORD=your-app-password\n"
+                    "For Gmail: enable 2FA on your Google account, then generate an "
+                    "App Password at https://myaccount.google.com/apppasswords. "
+                    "Optionally set SMTP_HOST, SMTP_PORT, EMAIL_RECIPIENT, and SMTP_SENDER."
+                ),
             },
             status_code=422,
         )
