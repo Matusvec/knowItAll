@@ -1,5 +1,6 @@
 """Tests for email service, scheduler, and scan/email API endpoints."""
 
+import os
 from datetime import date
 from unittest.mock import patch, MagicMock
 
@@ -194,6 +195,7 @@ class TestSendEmailEndpoint:
         assert "No scan results" in data["detail"]
 
     @patch("knowitall.api.routes.send_digest_email", return_value=True)
+    @patch.dict(os.environ, {"SMTP_USER": "user@test.com", "SMTP_PASSWORD": "pass"})
     def test_send_email_success(self, mock_send, client, sample_digest, sample_scout):
         scheduler_service.latest_digest = sample_digest
         scheduler_service.latest_scout = sample_scout
@@ -205,6 +207,7 @@ class TestSendEmailEndpoint:
         mock_send.assert_called_once()
 
     @patch("knowitall.api.routes.send_digest_email", return_value=False)
+    @patch.dict(os.environ, {"SMTP_USER": "user@test.com", "SMTP_PASSWORD": "pass"})
     def test_send_email_failure(self, mock_send, client, sample_digest):
         scheduler_service.latest_digest = sample_digest
 
@@ -212,3 +215,12 @@ class TestSendEmailEndpoint:
         assert resp.status_code == 500
         data = resp.json()
         assert data["status"] == "error"
+
+    def test_send_email_missing_credentials(self, client, sample_digest):
+        scheduler_service.latest_digest = sample_digest
+
+        resp = client.post("/api/send-email")
+        assert resp.status_code == 422
+        data = resp.json()
+        assert data["status"] == "error"
+        assert "SMTP" in data["detail"]

@@ -171,6 +171,14 @@ async def send_email_now() -> JSONResponse:
         )
 
     cfg = get_config()
+    if not cfg.email.smtp_user or not cfg.email.smtp_password:
+        return JSONResponse(
+            {
+                "status": "error",
+                "detail": "SMTP credentials not configured. Set SMTP_USER and SMTP_PASSWORD environment variables.",
+            },
+            status_code=422,
+        )
     success = send_digest_email(digest, cfg.email, scout_report=scout)
     if success:
         return JSONResponse({"status": "ok", "detail": "Email sent successfully."})

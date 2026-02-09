@@ -10,6 +10,7 @@ import hashlib
 import logging
 from datetime import datetime, timezone
 
+import feedparser
 import httpx
 
 from knowitall.config import AppConfig, get_config
@@ -50,12 +51,13 @@ async def scan_reddit(
     complaints: list[UserComplaint] = []
 
     for sub in subs:
-        url = f"https://www.reddit.com/r/{sub}/hot.json"
+        url = f"https://old.reddit.com/r/{sub}/hot.json"
         try:
             resp = await client.get(
                 url,
                 params={"limit": str(limit)},
                 headers={"User-Agent": "knowItAll/0.1"},
+                follow_redirects=True,
                 timeout=15.0,
             )
             resp.raise_for_status()
@@ -220,32 +222,29 @@ async def scan_product_hunt(
     client: httpx.AsyncClient,
 ) -> list[TechTrend]:
     """Fetch today's top Product Hunt launches for trend detection."""
-    # Product Hunt doesn't have a public JSON API without auth;
-    # we use the homepage as a best-effort source.
     trends: list[TechTrend] = []
     try:
         resp = await client.get(
-            "https://www.producthunt.com/",
+            "https://www.producthunt.com/feed",
             headers={"User-Agent": "knowItAll/0.1"},
+            follow_redirects=True,
             timeout=15.0,
         )
         resp.raise_for_status()
-        # Lightweight heuristic: extract product names from HTML title tags
-        # In production, use the PH GraphQL API with auth token
-        text = resp.text
-        # Look for common patterns in PH page (product cards)
-        import re
-
-        titles = re.findall(r'data-test="post-name"[^>]*>([^<]+)<', text)
-        for t in titles[:10]:
+        feed = feedparser.parse(resp.text)
+        for entry in feed.entries[:10]:
+            title = entry.get("title", "").strip()
+            if not title:
+                continue
+            link = entry.get("link", "https://www.producthunt.com")
             trends.append(
                 TechTrend(
-                    id=_hash_id("ph-trend", t),
-                    title=t.strip(),
+                    id=_hash_id("ph-trend", title),
+                    title=title,
                     description="Trending on Product Hunt today.",
                     evidence="Featured on Product Hunt front page.",
                     sources=[TrendSource.PRODUCT_HUNT],
-                    source_urls=["https://www.producthunt.com"],
+                    source_urls=[link],
                     interest_score=0.6,
                 )
             )
