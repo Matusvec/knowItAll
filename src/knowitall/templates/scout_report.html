@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ report.headline or 'Scout Report' }}</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --text: #e6edf3;
+            --muted: #8b949e;
+            --accent: #58a6ff;
+            --green: #3fb950;
+            --orange: #d29922;
+            --red: #f85149;
+            --purple: #bc8cff;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem 1rem;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { font-size: 1.8rem; margin-bottom: 0.5rem; color: var(--accent); }
+        .subtitle { color: var(--muted); margin-bottom: 2rem; font-size: 0.95rem; }
+        .stats { display: flex; gap: 1.5rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .stat-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 8px; padding: 1rem 1.5rem; flex: 1; min-width: 140px;
+        }
+        .stat-card .number { font-size: 2rem; font-weight: 700; color: var(--accent); }
+        .stat-card .label { font-size: 0.85rem; color: var(--muted); }
+        .section { margin-bottom: 2rem; }
+        .section-header {
+            display: flex; align-items: center; justify-content: space-between;
+            cursor: pointer; padding: 1rem 1.5rem; background: var(--surface);
+            border: 1px solid var(--border); border-radius: 8px 8px 0 0; user-select: none;
+        }
+        .section-header h2 { font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem; }
+        .section-header .badge {
+            background: var(--accent); color: var(--bg); border-radius: 12px;
+            padding: 0.1rem 0.6rem; font-size: 0.8rem; font-weight: 600;
+        }
+        .section-header .toggle { font-size: 1.2rem; transition: transform 0.2s; }
+        .section-content {
+            border: 1px solid var(--border); border-top: none;
+            border-radius: 0 0 8px 8px; overflow: hidden;
+        }
+        .section-content.collapsed { display: none; }
+        .card { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
+        .card:last-child { border-bottom: none; }
+        .card-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .card-title a { color: var(--accent); text-decoration: none; }
+        .card-title a:hover { text-decoration: underline; }
+        .card-meta { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem; }
+        .card-body { font-size: 0.9rem; color: var(--text); }
+        .tag {
+            display: inline-block; font-size: 0.75rem; padding: 0.15rem 0.5rem;
+            border-radius: 4px; font-weight: 600; margin-right: 0.3rem;
+        }
+        .tag-green { background: rgba(63,185,80,0.15); color: var(--green); }
+        .tag-orange { background: rgba(210,153,34,0.15); color: var(--orange); }
+        .tag-red { background: rgba(248,81,73,0.15); color: var(--red); }
+        .tag-purple { background: rgba(188,140,255,0.15); color: var(--purple); }
+        .tag-blue { background: rgba(88,166,255,0.15); color: var(--accent); }
+        .links { margin-top: 0.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+        .links a {
+            font-size: 0.8rem; color: var(--accent); text-decoration: none;
+            border: 1px solid var(--border); border-radius: 4px; padding: 0.2rem 0.6rem;
+        }
+        .links a:hover { background: rgba(88,166,255,0.1); }
+        .expandable { margin-top: 0.5rem; }
+        .expand-btn {
+            background: none; border: 1px solid var(--border); color: var(--muted);
+            font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: 4px; cursor: pointer;
+        }
+        .expand-btn:hover { color: var(--accent); border-color: var(--accent); }
+        .expand-content {
+            display: none; margin-top: 0.5rem; padding: 0.75rem;
+            background: rgba(22,27,34,0.8); border-radius: 6px; font-size: 0.85rem;
+        }
+        .expand-content.open { display: block; }
+        .quote {
+            border-left: 3px solid var(--orange); padding: 0.5rem 0.75rem;
+            margin: 0.5rem 0; font-style: italic; color: var(--muted);
+        }
+        .score-bar {
+            display: inline-block; width: 60px; height: 6px; background: var(--border);
+            border-radius: 3px; overflow: hidden; vertical-align: middle; margin-left: 0.5rem;
+        }
+        .score-fill { height: 100%; border-radius: 3px; }
+        .source-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .source-table th, .source-table td {
+            padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); text-align: left;
+        }
+        .source-table th { color: var(--muted); font-weight: 600; }
+        .status-success { color: var(--green); }
+        .status-partial { color: var(--orange); }
+        .status-failed { color: var(--red); }
+        .status-unavailable { color: var(--muted); }
+        .empty-state { padding: 2rem; text-align: center; color: var(--muted); }
+        .nav-link {
+            display: inline-block; margin-bottom: 1.5rem; color: var(--accent);
+            text-decoration: none; font-size: 0.9rem;
+        }
+        .nav-link:hover { text-decoration: underline; }
+        @media (max-width: 600px) { .stats { flex-direction: column; } .stat-card { min-width: auto; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="/" class="nav-link">← Back to Intelligence Digest</a>
+    <h1>🔍 {{ report.headline or 'Scout Report' }}</h1>
+    <p class="subtitle">
+        Daily startup opportunity scan · {{ report.total_signals() }} signals found today.
+    </p>
+
+    <div class="stats">
+        <div class="stat-card">
+            <div class="number">{{ report.tech_trends | length }}</div>
+            <div class="label">Tech Trends</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ report.complaints | length }}</div>
+            <div class="label">Complaints</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ report.industry_gaps | length }}</div>
+            <div class="label">Industry Gaps</div>
+        </div>
+        <div class="stat-card">
+            <div class="number">{{ report.startup_ideas | length }}</div>
+            <div class="label">Startup Ideas</div>
+        </div>
+    </div>
+
+    <!-- Tech Trends -->
+    {% if report.tech_trends %}
+    <div class="section" id="section-trends">
+        <div class="section-header" onclick="toggleSection('trends')">
+            <h2>📈 Top Tech Trends <span class="badge">{{ report.tech_trends | length }}</span></h2>
+            <span class="toggle" id="toggle-trends">▼</span>
+        </div>
+        <div class="section-content" id="content-trends">
+            {% for trend in report.tech_trends %}
+            <div class="card">
+                <div class="card-title">{{ trend.title }}</div>
+                <div class="card-meta">
+                    {% for src in trend.sources %}
+                    <span class="tag tag-blue">{{ src.value | replace('_', ' ') | title }}</span>
+                    {% endfor %}
+                    {% if trend.growth_rate %}<span class="tag tag-green">{{ trend.growth_rate }}</span>{% endif %}
+                    Interest:
+                    <span class="score-bar"><span class="score-fill" style="width:{{ (trend.interest_score * 100) | int }}%;background:var(--green)"></span></span>
+                </div>
+                <div class="card-body">{{ trend.description }}</div>
+                {% if trend.evidence %}
+                <div class="expandable">
+                    <button class="expand-btn" onclick="toggleExpand(this)">▶ Evidence</button>
+                    <div class="expand-content">{{ trend.evidence }}</div>
+                </div>
+                {% endif %}
+                {% if trend.source_urls %}
+                <div class="links">
+                    {% for url in trend.source_urls %}
+                    <a href="{{ url }}" target="_blank" rel="noopener">🔗 Source</a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Complaints & Demands -->
+    {% if report.complaints %}
+    <div class="section" id="section-complaints">
+        <div class="section-header" onclick="toggleSection('complaints')">
+            <h2>😤 Key Complaints &amp; Demands <span class="badge">{{ report.complaints | length }}</span></h2>
+            <span class="toggle" id="toggle-complaints">▼</span>
+        </div>
+        <div class="section-content" id="content-complaints">
+            {% for c in report.complaints %}
+            <div class="card">
+                <div class="card-title">{{ c.summary }}</div>
+                <div class="card-meta">
+                    <span class="tag tag-red">{{ c.source.value | replace('_', ' ') | title }}</span>
+                    Severity:
+                    <span class="score-bar"><span class="score-fill" style="width:{{ (c.severity * 100) | int }}%;background:var(--red)"></span></span>
+                    {% if c.frequency %} · {{ c.frequency }}{% endif %}
+                </div>
+                {% if c.quote %}
+                <div class="quote">"{{ c.quote }}"</div>
+                {% endif %}
+                {% if c.detail %}
+                <div class="expandable">
+                    <button class="expand-btn" onclick="toggleExpand(this)">▶ Details</button>
+                    <div class="expand-content">{{ c.detail }}</div>
+                </div>
+                {% endif %}
+                {% if c.source_url %}
+                <div class="links">
+                    <a href="{{ c.source_url }}" target="_blank" rel="noopener">🔗 Source</a>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Industry Gaps -->
+    {% if report.industry_gaps %}
+    <div class="section" id="section-gaps">
+        <div class="section-header" onclick="toggleSection('gaps')">
+            <h2>🕳️ Industry Gaps <span class="badge">{{ report.industry_gaps | length }}</span></h2>
+            <span class="toggle" id="toggle-gaps">▼</span>
+        </div>
+        <div class="section-content" id="content-gaps">
+            {% for gap in report.industry_gaps %}
+            <div class="card">
+                <div class="card-title">{{ gap.title }}</div>
+                <div class="card-meta">
+                    Opportunity:
+                    <span class="score-bar"><span class="score-fill" style="width:{{ (gap.opportunity_score * 100) | int }}%;background:var(--green)"></span></span>
+                    {% if gap.market_size %} · {{ gap.market_size }}{% endif %}
+                </div>
+                <div class="card-body">{{ gap.description }}</div>
+                <div class="expandable">
+                    <button class="expand-btn" onclick="toggleExpand(this)">▶ Demand &amp; Supply</button>
+                    <div class="expand-content">
+                        <p><strong>Demand evidence:</strong> {{ gap.demand_evidence }}</p>
+                        <p><strong>Supply assessment:</strong> {{ gap.supply_assessment }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Startup Ideas -->
+    {% if report.startup_ideas %}
+    <div class="section" id="section-ideas">
+        <div class="section-header" onclick="toggleSection('ideas')">
+            <h2>🚀 Startup Ideas <span class="badge">{{ report.startup_ideas | length }}</span></h2>
+            <span class="toggle" id="toggle-ideas">▼</span>
+        </div>
+        <div class="section-content" id="content-ideas">
+            {% for idea in report.startup_ideas %}
+            <div class="card">
+                <div class="card-title">{{ idea.title }}</div>
+                <div class="card-meta">
+                    <span class="tag tag-purple">{{ idea.feasibility or 'medium' }} feasibility</span>
+                    <span class="tag tag-green">{{ idea.monetization[:30] }}</span>
+                    Target: {{ idea.target_market[:60] }}
+                </div>
+                <div class="card-body">
+                    <p>{{ idea.description }}</p>
+                    <p><strong>Why it fills a gap:</strong> {{ idea.why_it_fills_gap[:200] }}</p>
+                    <p><strong>Potential impact:</strong> {{ idea.potential_impact }}</p>
+                </div>
+                <div class="expandable">
+                    <button class="expand-btn" onclick="toggleExpand(this)">▶ Tech Stack &amp; Details</button>
+                    <div class="expand-content">
+                        <p><strong>Tech stack:</strong> {{ idea.tech_stack | join(', ') }}</p>
+                        <p><strong>Monetization:</strong> {{ idea.monetization }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Sources Summary -->
+    {% if report.sources_summary %}
+    <div class="section" id="section-sources">
+        <div class="section-header" onclick="toggleSection('sources')">
+            <h2>📋 Sources Summary <span class="badge">{{ report.sources_summary | length }}</span></h2>
+            <span class="toggle" id="toggle-sources">▼</span>
+        </div>
+        <div class="section-content" id="content-sources">
+            <div class="card">
+                <table class="source-table">
+                    <thead>
+                        <tr><th>Source</th><th>Items</th><th>Key Finding</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for s in report.sources_summary %}
+                        <tr>
+                            <td>{% if s.url %}<a href="{{ s.url }}" target="_blank" rel="noopener" style="color:var(--accent)">{{ s.source_name }}</a>{% else %}{{ s.source_name }}{% endif %}</td>
+                            <td>{{ s.items_found }}</td>
+                            <td>{{ s.key_finding }}</td>
+                            <td class="status-{{ s.status }}">{{ s.status }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not report.tech_trends and not report.complaints and not report.industry_gaps and not report.startup_ideas %}
+    <div class="empty-state">
+        <h2>📭 No signals today</h2>
+        <p>All sources returned empty. Check connectivity and try again later.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleSection(id) {
+    const content = document.getElementById('content-' + id);
+    const toggle = document.getElementById('toggle-' + id);
+    if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        toggle.textContent = '▼';
+    } else {
+        content.classList.add('collapsed');
+        toggle.textContent = '▶';
+    }
+}
+function toggleExpand(btn) {
+    const content = btn.nextElementSibling;
+    if (content.classList.contains('open')) {
+        content.classList.remove('open');
+        btn.textContent = btn.textContent.replace('▼', '▶');
+    } else {
+        content.classList.add('open');
+        btn.textContent = btn.textContent.replace('▶', '▼');
+    }
+}
+</script>
+</body>
+</html>
