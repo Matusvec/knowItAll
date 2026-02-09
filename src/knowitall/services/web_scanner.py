@@ -10,6 +10,7 @@ import hashlib
 import logging
 from datetime import datetime, timezone
 
+import feedparser
 import httpx
 
 from knowitall.config import AppConfig, get_config
@@ -221,8 +222,6 @@ async def scan_product_hunt(
     client: httpx.AsyncClient,
 ) -> list[TechTrend]:
     """Fetch today's top Product Hunt launches for trend detection."""
-    import feedparser
-
     trends: list[TechTrend] = []
     try:
         resp = await client.get(
